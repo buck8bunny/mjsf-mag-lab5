@@ -1,48 +1,33 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import Login from '@/components/Login.vue'; 
+import Register from '@/components/Register.vue';
+import Todo from '@/components/Todo.vue';
+import { getAuth } from "firebase/auth";
 
-
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import useAuth from "@/composables/useAuth";
-import LoginView from "@/views/LoginView.vue";
+const routes = [
+    { path: '/login', name: 'login', component: Login },
+    { path: '/register', name: 'register', component: Register },
+    { path: '/todo', name: 'todo', component: Todo },
+    { path: '/', redirect: { name: 'todo' } },
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-      meta:{
-        requiresAuth: true
-      }
-    },
-    {
-      path: '/about',
-      name: 'about',
-      component: () => import('../views/AboutView.vue'),
-      meta:{
-        requiresAuth: true
-      }
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-      meta:{
-        requiresAuth: false
-      }
-    },
-  ]
-})
-router.beforeEach((to) => {
-  const { userState } = useAuth()
-  console.log(userState);
-  if ( to.meta.requiresAuth && ! userState.authorized )  {
-    return { name: 'login' };
-  }
-  if ( (to.name == 'login' || to.name == 'register') && userState.authorized ) {
-    return { name: 'home' }
-  }
-  return true;
-})
-export default router
+    history: createWebHistory(),
+    routes,
+});
+
+// Перевірка авторизації
+router.beforeEach((to, from, next) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (to.name !== 'login' && to.name !== 'register' && !user) {
+        next({ name: 'login' });
+    } else if (user && to.name === 'login') {
+        next({ name: 'todo' });
+    } else {
+        next();
+    }
+});
+
+export default router;
